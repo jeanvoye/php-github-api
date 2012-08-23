@@ -87,6 +87,20 @@ class Repo extends AbstractApi
     }
 
     /**
+     * Delete a repository
+     * @link http://developer.github.com/v3/repos/
+     *
+     * @param string $username          the user who owns the repository
+     * @param string $repository        the name of the repository
+     *
+     * @return mixed                    null on success, array on error with 'message'
+     */
+    public function remove($username, $repository)
+    {
+        return $this->delete('repos/'.urlencode($username).'/'.urlencode($repository));
+    }
+
+    /**
      * Manage the collaborators of a repository
      * @link http://developer.github.com/v3/repos/collaborators/
      *
@@ -117,6 +131,17 @@ class Repo extends AbstractApi
     public function commits()
     {
         return new Commits($this->client);
+    }
+
+    /**
+     * Manage the content of a repository
+     * @link http://developer.github.com/v3/repos/contents/
+     *
+     * @return Contents
+     */
+    public function contents()
+    {
+        return new Contents($this->client);
     }
 
     /**
@@ -254,21 +279,6 @@ class Repo extends AbstractApi
     public function teams($username, $repository)
     {
         return $this->get('repos/'.urlencode($username).'/'.urlencode($repository).'/teams');
-    }
-
-    /**
-     * Get contents of any file or directory in a repository
-     * @link http://developer.github.com/v3/repos/contents/
-     *
-     * @param  string  $username         the user who owns the repository
-     * @param  string  $repository       the name of the repository
-     * @param  string  $path             path to file or directory
-     *
-     * @return array                     information for file | information for each item in directory
-     */
-    public function contents($username, $repository, $path)
-    {
-        return $this->get('repos/'.urlencode($username).'/'.urlencode($repository).'/contents/'.$path);
     }
 
     /**

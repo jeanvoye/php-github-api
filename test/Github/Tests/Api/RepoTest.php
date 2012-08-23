@@ -3,7 +3,7 @@
 namespace Github\Tests\Api;
 
 /**
- * Repository api test case 
+ * Repository api test case
  *
  * @author Leszek Prabucki <leszek.prabucki@gmail.com>
  */
@@ -50,16 +50,17 @@ class RepoTest extends TestCase
     public function shouldPaginateFoundRepositories()
     {
         $expectedArray = array(
-            array('id' => 1, 'name' => 'php'),
-            array('id' => 2, 'name' => 'php-cs')
+            array('id' => 3, 'name' => 'fork of php'),
+            array('id' => 4, 'name' => 'fork of php-cs')
         );
 
         $api = $this->getApiMock();
         $api->expects($this->once())
             ->method('get')
-            ->with('legacy/repos/search/php', array('start_page' => 2));
+            ->with('legacy/repos/search/php', array('start_page' => 2))
+            ->will($this->returnValue($expectedArray));
 
-        $api->find('php', array('start_page' => 2));
+        $this->assertEquals($expectedArray, $api->find('php', array('start_page' => 2)));
     }
 
     /**
@@ -209,22 +210,6 @@ class RepoTest extends TestCase
     /**
      * @test
      */
-    public function shouldGetContentsForPathFromRepository()
-    {
-        $expectedArray = 'some content';
-
-        $api = $this->getApiMock();
-        $api->expects($this->once())
-            ->method('get')
-            ->with('repos/KnpLabs/php-github-api/contents/path/in/repo')
-            ->will($this->returnValue($expectedArray));
-
-        $this->assertEquals($expectedArray, $api->contents('KnpLabs', 'php-github-api', 'path/in/repo'));
-    }
-
-    /**
-     * @test
-     */
     public function shouldGetRepositoryDownloads()
     {
         $expectedArray = array('down1', 'down2');
@@ -273,6 +258,36 @@ class RepoTest extends TestCase
     /**
      * @test
      */
+    public function shouldDelete()
+    {
+        $api = $this->getApiMock();
+        $api->expects($this->once())
+            ->method('delete')
+            ->with('repos/l3l0Repo/test')
+            ->will($this->returnValue(null));
+
+        $this->assertNull($api->remove('l3l0Repo', 'test'));
+    }
+
+    /**
+     * @test
+     */
+    public function shouldNotDelete()
+    {
+        $expectedArray = array('message' => 'Not Found');
+
+        $api = $this->getApiMock();
+        $api->expects($this->once())
+            ->method('delete')
+            ->with('repos/l3l0Repo/uknown-repo')
+            ->will($this->returnValue($expectedArray));
+
+        $this->assertEquals($expectedArray, $api->remove('l3l0Repo', 'uknown-repo'));
+    }
+
+    /**
+     * @test
+     */
     public function shouldGetCollaboratorsApiObject()
     {
         $api = $this->getApiMock();
@@ -298,6 +313,16 @@ class RepoTest extends TestCase
         $api = $this->getApiMock();
 
         $this->assertInstanceOf('Github\Api\Repository\Commits', $api->commits());
+    }
+
+    /**
+     * @test
+     */
+    public function shouldGetContentsApiObject()
+    {
+        $api = $this->getApiMock();
+
+        $this->assertInstanceOf('Github\Api\Repository\Contents', $api->contents());
     }
 
     /**
