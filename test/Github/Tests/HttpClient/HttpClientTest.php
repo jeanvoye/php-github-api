@@ -2,15 +2,11 @@
 
 namespace Github\Tests\HttpClient;
 
+use Github\Client;
 use Github\HttpClient\HttpClient;
 use Github\HttpClient\Message\Request;
 use Github\HttpClient\Message\Response;
 
-/**
- * HttpClient test case
- *
- * @author Leszek Prabucki <leszek.prabucki@gmail.com>
- */
 class HttpClientTest extends \PHPUnit_Framework_TestCase
 {
     /**
@@ -35,6 +31,29 @@ class HttpClientTest extends \PHPUnit_Framework_TestCase
         $httpClient->setOption('timeout', 666);
 
         $this->assertEquals(666, $httpClient->getOption('timeout'));
+    }
+
+    /**
+     * @test
+     * @dataProvider getAuthenticationFullData
+     */
+    public function shouldAuthenticateUsingAllGivenParameters($login, $password, $method)
+    {
+        $client = new TestHttpClient();
+        $client->authenticate($login, $password, $method);
+
+        $this->assertCount(2, $client->listeners);
+        $this->assertInstanceOf('Github\HttpClient\Listener\AuthListener', $client->listeners['Github\HttpClient\Listener\AuthListener']);
+    }
+
+    public function getAuthenticationFullData()
+    {
+        return array(
+            array('login', 'password', Client::AUTH_HTTP_PASSWORD),
+            array('token', null, Client::AUTH_HTTP_TOKEN),
+            array('token', null, Client::AUTH_URL_TOKEN),
+            array('client_id', 'client_secret', Client::AUTH_URL_CLIENT_ID),
+        );
     }
 
     /**
@@ -65,6 +84,23 @@ class HttpClientTest extends \PHPUnit_Framework_TestCase
 
         $httpClient = new HttpClient(array(), $client);
         $httpClient->post($path, $parameters, $headers);
+
+        $this->assertEquals('{"a":"b"}', $httpClient->getLastRequest()->getContent());
+    }
+
+    /**
+     * @test
+     */
+    public function shouldDoPOSTRequestWithoutContent()
+    {
+        $path       = '/some/path';
+
+        $client = $this->getBrowserMock();
+
+        $httpClient = new HttpClient(array(), $client);
+        $httpClient->post($path);
+
+        $this->assertEmpty($httpClient->getLastRequest()->getContent());
     }
 
     /**
@@ -163,7 +199,7 @@ class HttpClientTest extends \PHPUnit_Framework_TestCase
         $client = $this->getBrowserMock();
 
         $httpClient = new TestHttpClient(array(), $client);
-        $httpClient->setFakeResponse($message);
+        $httpClient->fakeResponse = $message;
 
         $response = $httpClient->get($path, $parameters, $headers);
 
@@ -186,25 +222,27 @@ class HttpClientTest extends \PHPUnit_Framework_TestCase
         $response->addHeader('X-RateLimit-Remaining: 0');
 
         $httpClient = new TestHttpClient(array(), $this->getBrowserMock());
-        $httpClient->setFakeResponse($response);
+        $httpClient->fakeResponse = $response;
 
         $httpClient->get($path, $parameters, $headers);
     }
 
-    protected function getBrowserMock()
+    protected function getBrowserMock(array $methods = array())
     {
-        return $this->getMock('Buzz\Client\ClientInterface');
+        return $this->getMock(
+            'Buzz\Client\ClientInterface',
+            array_merge(
+                array('setTimeout', 'setVerifyPeer', 'send'),
+                $methods
+            )
+        );
     }
 }
 
 class TestHttpClient extends HttpClient
 {
     public $fakeResponse;
-
-    public function setFakeResponse($response)
-    {
-        $this->fakeResponse = $response;
-    }
+    public $listeners;
 
     public function getOption($name, $default = null)
     {
@@ -217,8 +255,8 @@ class TestHttpClient extends HttpClient
 
     public function request($path, array $parameters = array(), $httpMethod = 'GET', array $headers = array())
     {
-        $request  = new Request($httpMethod);
-        $response = $this->fakeResponse ? $this->fakeResponse : new Response();
+        $request  = $this->createRequest($httpMethod, $path);
+        $response = $this->createResponse();
         if (0 < count($this->listeners)) {
             foreach ($this->listeners as $listener) {
                 $listener->postSend($request, $response);
@@ -226,5 +264,15 @@ class TestHttpClient extends HttpClient
         }
 
         return $response;
+    }
+
+    protected function createRequest($httpMethod, $url)
+    {
+        return new Request($httpMethod);
+    }
+
+    protected function createResponse()
+    {
+        return $this->fakeResponse ?: new Response();
     }
 }

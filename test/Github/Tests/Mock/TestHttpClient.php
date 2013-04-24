@@ -4,11 +4,6 @@ namespace Github\Tests\Mock;
 
 use Github\HttpClient\HttpClientInterface;
 
-/**
- * HTTPClient test implementation
- *
- * @author Leszek Prabucki <leszek.prabucki@gmail.com>
- */
 class TestHttpClient implements HttpClientInterface
 {
     public $authenticated = false;
@@ -53,7 +48,7 @@ class TestHttpClient implements HttpClientInterface
         $this->requests['patch'][] = $path;
     }
 
-    public function put($path, array $options = array())
+    public function put($path, array $options = array(), array $headers = array())
     {
         $this->requests['put'][] = $path;
     }

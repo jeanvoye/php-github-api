@@ -4,11 +4,6 @@ namespace Github\Tests\Api;
 
 use Github\Api\AbstractApi;
 
-/**
- * AbstractApi test case
- *
- * @author Leszek Prabucki <leszek.prabucki@gmail.com>
- */
 class AbstractApiTest extends \PHPUnit_Framework_TestCase
 {
     /**
@@ -126,7 +121,7 @@ class AbstractApiTest extends \PHPUnit_Framework_TestCase
      */
     protected function getClientMock()
     {
-        return new \Github\Client($this->getHttpClientMock());
+        return new \Github\Client($this->getHttpMock());
     }
 
     /**
